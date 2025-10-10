@@ -1,22 +1,27 @@
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: 'gmail', // example using Gmail
   auth: {
-    user: 'your.email@gmail.com',
-    pass: 'your_gmail_app_password'
-  }
+    user: process.env.EMAIL_USER, // your email in env vars
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
-async function sendEmailNotification(to, subject, htmlContent) {
+async function sendEmailNotification(to, subject, text) {
   const mailOptions = {
-    from: 'your.email@gmail.com',
+    from: process.env.EMAIL_USER,
     to,
     subject,
-    html: htmlContent
+    text,
   };
-  
-  return transporter.sendMail(mailOptions);
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Notification email sent');
+  } catch (error) {
+    console.error('Error sending email:', error);
+  }
 }
 
 module.exports = { sendEmailNotification };

@@ -1,28 +1,38 @@
-const puppeteer = require('puppeteer');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
-async function scrapePrice(url, platform) {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto(url, { waitUntil: 'networkidle2' });
-  
-  let price = 0;
-  let inStock = true;
-  let saleEvent = '';
+async function scrapePrice(productUrl, platform) {
+  try {
+    const { data } = await axios.get(productUrl);
+    const $ = cheerio.load(data);
 
-  if(platform === 'flipkart') {
-    price = await page.$eval('._30jeq3._16Jk6d', el => el.textContent).catch(() => '');
-    price = parseInt(price.replace(/[^\d]/g, ''));
-    inStock = !(await page.$eval('._16FRp0', el => el.textContent).catch(() => 'In Stock')).toLowerCase().includes('out of stock');
-    saleEvent = await page.$eval('._3rrtr6', el => el.textContent).catch(() => '');
-  } else if(platform === 'amazon') {
-    price = await page.$eval('#priceblock_ourprice, #priceblock_dealprice', el => el.textContent).catch(() => '');
-    price = parseInt(price.replace(/[^\d]/g, ''));
-    inStock = !(await page.$eval('#availability span', el => el.textContent).catch(() => 'In Stock')).toLowerCase().includes('out of stock');
-    saleEvent = ''; // Amazon sale event scraping can be enhanced
+    let price = null;
+    let inStock = true; // default
+    let productId = null;
+    let saleEvent = '';
+
+    if (platform === 'exampleRetailer') {
+      // Example selectors, replace with real CSS selectors for this retailer
+      price = $('#price').text().trim();
+      price = parseFloat(price.replace(/[^0-9\.]/g, ''));
+
+      inStock = !$('.out-of-stock').length;
+
+      productId = $('meta[name="product-id"]').attr('content') || 'unknown';
+      saleEvent = $('.sale-tag').text().trim() || '';
+    }
+
+    // Add more platform cases here...
+
+    if (!price) {
+      throw new Error('Price not found');
+    }
+
+    return { price, inStock, productId, saleEvent };
+  } catch (error) {
+    console.error('Error scraping price:', error.message);
+    throw error;
   }
-
-  await browser.close();
-  return { price, inStock, saleEvent };
 }
 
 module.exports = { scrapePrice };

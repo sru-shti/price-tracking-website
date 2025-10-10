@@ -4,6 +4,7 @@ const Price = require('../models/price');
 const { scrapePrice } = require('../utils/priceUtils');
 const { sendEmailNotification } = require('../utils/emailUtils');
 const authenticateFirebaseToken = require('../middleware/authMiddleware');
+const admin = require('firebase-admin');
 
 router.post('/track', authenticateFirebaseToken, async (req, res) => {
   // Access authenticated user as req.user
@@ -14,11 +15,13 @@ router.post('/track', authenticateFirebaseToken, async (req, res) => {
 
 
 // Endpoint to scrape product price given URL and platform
-router.post('/scrape', async (req, res) => {
+router.post('/scrape', authenticateFirebaseToken, async (req, res) => {
   const { productUrl, platform, productId } = req.body;
+  const userId = req.user.uid;
+
   try {
     const data = await scrapePrice(productUrl, platform);
-    // Save to DB
+
     const priceEntry = new Price({
       productId,
       platform,
@@ -28,13 +31,24 @@ router.post('/scrape', async (req, res) => {
     });
     await priceEntry.save();
 
-    // TODO: check price drop and send email notifications (implement later)
+    // Fetch user email from Firebase Admin SDK
+    const userRecord = await admin.auth().getUser(userId);
+    const userEmail = userRecord.email;
+
+    const previousEntry = await Price.findOne({ productId, platform }).sort({ createdAt: -1 });
+
+    if (previousEntry && data.price < previousEntry.price) {
+      // Price dropped, send notification email
+      await sendEmailNotification(userEmail, 'Price Drop Alert', `Price dropped to $${data.price} on ${platform}`);
+    }
 
     res.json({ currentPrice: data.price, inStock: data.inStock });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to scrape price' });
   }
 });
+
 
 module.exports = router;

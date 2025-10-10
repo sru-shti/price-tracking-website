@@ -1,6 +1,6 @@
 // src/components/Header.jsx
 import React, { useState } from 'react';
-import Auth from './Auth';
+import Auth from './Auth.jsx';
 
 function Header() {
   const [showAuth, setShowAuth] = useState(false);

@@ -1,32 +1,67 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { getAuth } from 'firebase/auth';
 
 function TrackProduct() {
   const [url, setUrl] = useState('');
-  const [platform, setPlatform] = useState('flipkart');
-  const [result, setResult] = useState(null);
+  const [platform, setPlatform] = useState('');
+  const [productData, setProductData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleTrack = async () => {
+  const trackProduct = async (productUrl, platform) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) throw new Error('User not signed in');
+
+    const token = await user.getIdToken();
+
+    const response = await fetch('http://localhost:5000/api/prices/scrape', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ productUrl, platform }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch product data');
+    }
+    return response.json();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setProductData(null);
+
     try {
-      const { data } = await axios.post('http://localhost:5000/api/prices/scrape', { productUrl: url, platform });
-      setResult(data);
-    } catch {
-      alert('Failed to track product');
+      const data = await trackProduct(url, platform);
+      setProductData(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div>
-      <input placeholder="Product URL" value={url} onChange={e => setUrl(e.target.value)} />
-      <select value={platform} onChange={e => setPlatform(e.target.value)}>
-        <option value="flipkart">Flipkart</option>
-        <option value="amazon">Amazon</option>
-      </select>
-      <button onClick={handleTrack}>Track Price</button>
-      {result && (
+      <h2>Track Product</h2>
+      <form onSubmit={handleSubmit}>
+        <input type="url" placeholder="Product URL" value={url} onChange={e => setUrl(e.target.value)} required />
+        <input type="text" placeholder="Platform" value={platform} onChange={e => setPlatform(e.target.value)} required />
+        <button type="submit" disabled={loading}>Track</button>
+      </form>
+
+      {loading && <p>Loading...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      {productData && (
         <div>
-          <p>Current Price: ₹{result.currentPrice}</p>
-          <p>In Stock: {result.inStock ? 'Yes' : 'No'}</p>
+          <p>Price: ${productData.currentPrice}</p>
+          <p>{productData.inStock ? 'In Stock' : 'Out of Stock'}</p>
         </div>
       )}
     </div>

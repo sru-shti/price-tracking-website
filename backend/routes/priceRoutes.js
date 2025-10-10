@@ -3,6 +3,15 @@ const router = express.Router();
 const Price = require('../models/price');
 const { scrapePrice } = require('../utils/priceUtils');
 const { sendEmailNotification } = require('../utils/emailUtils');
+const authenticateFirebaseToken = require('../middleware/authMiddleware');
+
+router.post('/track', authenticateFirebaseToken, async (req, res) => {
+  // Access authenticated user as req.user
+  const userId = req.user.uid;
+  // Your existing price tracking logic here
+  res.json({ message: `User ${userId} track request received` });
+});
+
 
 // Endpoint to scrape product price given URL and platform
 router.post('/scrape', async (req, res) => {

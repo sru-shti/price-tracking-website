@@ -14,7 +14,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect('mongodb://localhost:27017/flipkart-tracker', {
+mongoose.connect('mongodb+srv://chobhesrushti:Mz9t9vMkkoHvvHd7@cluster0.hu82ya0.mongodb.net/price-track', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })

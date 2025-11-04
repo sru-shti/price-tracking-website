@@ -1,12 +1,15 @@
 const mongoose = require('mongoose');
-
 const PriceSchema = new mongoose.Schema({
   productId: String,
-  platform: String, // flipkart or amazon
+  name: String,
+  imageUrl: String,
+  platform: String,
   price: Number,
   date: { type: Date, default: Date.now },
   inStock: Boolean,
-  saleEvent: String
-});
+  saleEvent: String,
+  history: [{ price: Number, timestamp: Date }]
+}, { timestamps: true });
+
 
 module.exports = mongoose.model('Price', PriceSchema);

@@ -8,19 +8,27 @@ function Auth() {
   const [isSignup, setIsSignup] = useState(true);
 
   const handleSubmit = async e => {
-    e.preventDefault();
-    try {
-      if (isSignup) {
-        await createUserWithEmailAndPassword(auth, email, password);
-        alert('User signed up!');
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-        alert('User signed in!');
-      }
-    } catch (error) {
-      alert(error.message);
+  e.preventDefault();
+  try {
+    if (isSignup) {
+      await createUserWithEmailAndPassword(auth, email, password);
+      alert('User signed up!');
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+      alert('User signed in!');
     }
-  };
+
+    // Get the ID Token of the logged-in user
+    if (auth.currentUser) {
+      const idToken = await auth.currentUser.getIdToken();
+      console.log('Firebase ID Token:', idToken);
+      // You can now save the token or use it for your backend API calls
+    }
+  } catch (error) {
+    alert(error.message);
+  }
+};
+
 
   return (
     <form onSubmit={handleSubmit}>
